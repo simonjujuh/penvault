@@ -1,32 +1,37 @@
-# Audit vaults
+# PenVaults
+
+**WARNING**: this is an early work, please use it with caution and report any bug.
+
+## Description
+Manage and automate pentest vaults creation with associated keepass entries.
 
 ## Installation
 
 - Install the dependencies
 ```bash
-sudo apt install veracrypt keepassxc
+sudo apt install veracrypt
+pip install .
 ```
-
 - Basic usage
 ```bash
-python3 penvault.py list
-python3 penvault.py create <vault_name> --auto-mount
-python3 penvault.py mount <vault_name>
-python3 penvault.py umount <vault_name>
+penvault --list
+penvault --create VAULT_NAME --size 10G
+penvault --open VAULT_NAME
+penvault --close VAULT_NAME
+penvault --show-config
+```
+
+## Bash / ZSH completion
+```bash
+pip install argcomplete
+activate-global-python-argcomplete
+# Add this line to your zshrc / bashrc 
+eval "$(register-python-argcomplete penvault)"
 ```
 
 ## To-Do
-
-- [ ] Make zsh completion scripts
-- [ ] Make bash completion scripts
 - [ ] Implement the prune feature
-- [ ] Color highlights
-
-## Aliases
-
-```bash
-alias pvl=''
-alias pvc=''
-alias pvo=''
-alias pvcl=''
-```
+- [x] Color highlights
+- [ ] Add pentest template folder
+- [ ] Add pentest cheat sheets / MVP
+- [ ] Use a dedicated keepass db for containers
