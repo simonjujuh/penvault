@@ -1,8 +1,12 @@
-import shutil, sys
+import shutil
 import subprocess
 
 def veracrypt_binary_path():
-    return shutil.which("veracrypt")
+    verabin = shutil.which("veracrypt")
+    if not verabin:
+        raise Exception('Veracryt is not in your PATH')
+    
+    return verabin
 
 
 def create_container(container_path, project_size, password):
@@ -20,13 +24,7 @@ def create_container(container_path, project_size, password):
                 "--random-source=/dev/urandom"
               ]
     
-    try:
-        # Execute the command
-        subprocess.run(command, text=True) #, capture_output=False ,text=True)
-        print(f"[+] container '{container_path}' created successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"[-] error while creating '{container_path}': {e}")
-        sys.exit(1)
+    subprocess.run(command, text=True, check=True) #, capture_output=False 
     
 
 def mount_container(container_path, mount_path, password):
@@ -38,36 +36,20 @@ def mount_container(container_path, mount_path, password):
                 "--keyfiles=",
                 "--protect-hidden=no"
                 ]
-    try:
-        # Execute the command
-        subprocess.run(command, text=True, check=True)
-        print(f"[+] container '{container_path}' mounted successfully at '{mount_path}'")
-
-    except subprocess.CalledProcessError as e:
-        print(f"[-] error while opening {container_path}: {e}")
-        sys.exit(1)
-
+    
+    subprocess.run(command, text=True, check=True)
 
 def umount_container(container_path):
     command = [veracrypt_binary_path(), "--text", "--dismount", str(container_path)]
 
-    try:
-        # Execute the command
-        subprocess.run(command, text=True, check=True)
-        print(f"[+] container '{container_path}' dismounted successfully")
-
-    except subprocess.CalledProcessError as e:
-        print(f"[-] error while dismonting {container_path}: {e}")
+    subprocess.run(command, text=True, check=True)
 
 
 def list_mounted_containers():
     command = [veracrypt_binary_path(), "--text", "--list"]
-    try:
-        # Execute the command
-        command_output = subprocess.run(command, text=True, capture_output=True)
-        return parse_veracrypt_output(command_output.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"[-] could not list containers: {e}")
+    command_output = subprocess.run(command, text=True, capture_output=True)
+    return parse_veracrypt_output(command_output.stdout)
+    # return parse_veracrypt_output(run(command, capture_output=True))
 
 
 def parse_veracrypt_output(output):
