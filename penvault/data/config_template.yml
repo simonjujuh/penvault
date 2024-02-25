@@ -1,8 +1,3 @@
 veracrypt:
   container_path: /path/to/containers/folder
   mount_path: /path/to/containers/mountpoint
-
-keepass:
-  database_path: /path/to/keepass/database.kdbx
-  keyfile_path: /path/to/keepass/keyfile.key
-  entry_title: AMG_Project
