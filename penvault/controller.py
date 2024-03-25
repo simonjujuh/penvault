@@ -167,7 +167,7 @@ class VaultController(object):
             if directory_path.exists():
                 directory_path.rmdir()
 
-    def complete_vaults(self, prefix, parsed_args, **kwargs):
+    def complete_all_vaults(self, prefix, parsed_args, **kwargs):
         veracrypt_fs_containers = []
 
         for e in self._veracrypt_container_path.glob("*.vc*"):
@@ -175,3 +175,12 @@ class VaultController(object):
             veracrypt_fs_containers.append(v)
 
         return (vault for vault in veracrypt_fs_containers if vault.startswith(prefix))
+    
+    def complete_opened_vaults(self, prefix, parsed_args, **kwargs):
+        opened_vaults = []
+        mounted_containers = veracrypt.list_mounted_containers()
+
+        for container in mounted_containers:
+            opened_vaults.append(self._container_to_vault(container['path']))
+
+        return (vault for vault in opened_vaults if vault.startswith(prefix))

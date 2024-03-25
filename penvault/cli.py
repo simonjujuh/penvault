@@ -17,8 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description='Pentest Vaults Manager')
     parser.add_argument('-c', '--create', help='Specify the name for the new vault')
     parser.add_argument('-s', '--size', help='Specify the size for the new vault container')
-    parser.add_argument('-o', '--open', help='Specify the name of the vault to open').completer = app.complete_vaults
-    parser.add_argument('-C', '--close', help='Specify the name of the vault to close').completer = app.complete_vaults
+    parser.add_argument('-o', '--open', help='Specify the name of the vault to open').completer = app.complete_all_vaults
+    parser.add_argument('-C', '--close', help='Specify the name of the vault to close').completer = app.complete_opened_vaults
     parser.add_argument('-l', '--list', action='store_true', help='List vaults')
     parser.add_argument('--auto-mount', action='store_true', default=False, help='Automatically open the newly created container')
     parser.add_argument('--show-config', action='store_true', default=False, help='Automatically open the newly created container')
