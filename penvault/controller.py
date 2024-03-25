@@ -45,9 +45,9 @@ class VaultController(object):
         self._veracrypt_mount_path      = Path(config['veracrypt']['mount_path'])
 
     def show_app_config(self):
-        log.success(f"Config file is {self._config_file_path}")
-        log.info(f"Veracrypt containers: {self._veracrypt_container_path}")
-        log.info(f"Veracrypt mount path: {self._veracrypt_mount_path}")
+        log.info(f"config file is       : {self._config_file_path}")
+        log.info(f"veracrypt containers : {self._veracrypt_container_path}")
+        log.info(f"veracrypt mount path : {self._veracrypt_mount_path}")
 
     def _vault_to_container(self, vault_name):
         """
@@ -70,22 +70,21 @@ class VaultController(object):
 
         # Do not overwrite an existing container
         if container_path.exists():
-            log.error(f"container '{container_path}' already exists, please use another vault name")
+            log.error(f"{container_path.name} already exists, please use another vault name")
             sys.exit(1)
 
         # Create a container
         try:
             veracrypt.create_container(container_path, vault_size, password)
-            log.success(f"container '{container_path}' created successfully")
-            log.info(f"password: {password}")
+            log.success(f"{container_path.name} created successfully with password {password}")
         except Exception as e:
-            log.error(f"unable to create '{container_path}': {e}")
+            log.error(f"unable to create {container_path}: {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             pass
         finally:
             if auto_mount:
-                veracrypt.mount_container(container_path, self._veracrypt_mount_path, password)
+                self.open_vault(vault_name)
 
     def open_vault(self, vault_name):
         # Get the vault name
@@ -93,12 +92,12 @@ class VaultController(object):
 
         # Check if container path exists
         if not container_path.exists():
-            log.error(f"container '{container_path}' does not exist, exiting.")
+            log.error(f"{container_path} does not exist, exiting.")
             sys.exit(1)
 
         # Check if veracrypt mount path exists
         if not self._veracrypt_mount_path.exists():
-            log.error(f"mount point path '{self._veracrypt_mount_path}' does not exist, abort.")
+            log.error(f"{self._veracrypt_mount_path} mount point does not exist, exiting.")
             sys.exit(1)
         
         # Mount container
@@ -108,9 +107,9 @@ class VaultController(object):
         try:
             directory_path.mkdir(parents=False, exist_ok=True)
             veracrypt.mount_container(container_path, directory_path, '') # empty password means it will be prompted
-            log.success(f"container '{container_path}' mounted successfully")
+            log.success(f"{container_path.name} mounted: {directory_path}")
         except Exception as e:
-            log.error(f"unable to mount '{container_path}': {e}")
+            log.error(f"unable to mount {container_path}: {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             directory_path.rmdir()
@@ -126,15 +125,25 @@ class VaultController(object):
         veracrypt_fs_containers = [str(e) for e in self._veracrypt_container_path.glob("*.vc*")]
         veracrypt_fs_containers.sort()
 
-        log.info("available containers:")
         for container in mounted_containers:
-            vault = self._container_to_vault(container['path'])
-            print(f"  - {vault.ljust(40)} (mounted at '{container['mount point']}')")
+            # vault = self._container_to_vault(container['path'])
+            # print(f"{vault.ljust(35)} {container['mount point']}")
             veracrypt_fs_containers.remove(container['path'])
-
+        
+        dismounted_containers = []
         for container in veracrypt_fs_containers:
             vault = self._container_to_vault(container)
-            print(f"  - {vault}")
+            dismounted_containers.append(vault)
+
+        log.info("list of dismounted containers")
+        [log.success(container) for container in dismounted_containers]
+        
+        print() # newline
+        log.info("list of mounted containers")
+        for container in mounted_containers:
+            vault = self._container_to_vault(container['path'])
+            log.success(f"{vault} at {container['mount point']}")
+
 
     def close_vault(self, vault_name):
         container_path = self._vault_to_container(vault_name)
@@ -142,14 +151,14 @@ class VaultController(object):
         # Check if container is mounted or not
         mounted_containers = [entry['path'] for entry in veracrypt.list_mounted_containers()]
         if not str(container_path) in mounted_containers:
-            log.error(f"container '{container_path}' not mounted")
+            log.error(f"{container_path.name} not mounted, exiting")
             sys.exit(1)
-        
+
         try:
             veracrypt.umount_container(container_path)
-            log.success(f"container '{container_path}' unmounted successfully")
+            log.success(f"{container_path.name} unmounted successfully")
         except Exception as e:
-            log.error(f"unable to unmount '{container_path}': {e}")
+            log.error(f"unable to dismount '{container_path.name}': {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             pass

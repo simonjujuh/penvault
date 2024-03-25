@@ -30,8 +30,11 @@ eval "$(register-python-argcomplete penvault)"
 ```
 
 ## To-Do
-- [ ] Implement the prune feature
 - [x] Color highlights
 - [ ] Add pentest template folder
 - [ ] Add pentest cheat sheets / MVP
 - [ ] Use a dedicated keepass db for containers
+- [ ] Implement the prune feature
+- [ ] Make dedicated completion function for open and close
+- [x] Review log messages consistence
+- [x] Fix auto-open path
