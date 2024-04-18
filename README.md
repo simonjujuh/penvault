@@ -15,7 +15,7 @@ pip install .
 - Basic usage
 ```bash
 penvault --list
-penvault --create VAULT_NAME --size 10G
+penvault --create VAULT_NAME --size 10G --auto-mount
 penvault --open VAULT_NAME
 penvault --close VAULT_NAME
 penvault --show-config
@@ -30,11 +30,9 @@ eval "$(register-python-argcomplete penvault)"
 ```
 
 ## To-Do
-- [x] Color highlights
+- [ ] Use a dedicated keepass DB for containers
+- [ ] Implement the prune feature
 - [ ] Add pentest template folder
 - [ ] Add pentest cheat sheets / MVP
-- [ ] Use a dedicated keepass db for containers
-- [ ] Implement the prune feature
-- [ ] Make dedicated completion function for open and close
-- [x] Review log messages consistence
-- [x] Fix auto-open path
+- [ ] Execute without argcomplete
+- [ ] Add an autoresize feature

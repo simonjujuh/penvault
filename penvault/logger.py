@@ -29,12 +29,13 @@ class Logger:
     def warning(self, message):
         self.logger.warning(Fore.YELLOW + "[!] " + Style.RESET_ALL + message)
 
+
 log = Logger("penvault")
 
-# if __name__ == "__main__":
-#     logger = Logger("example_logger")
 
-#     logger.info("This is an information message.")
-#     logger.success("This is a success message.")
-#     logger.error("This is an error message.")
-#     logger.warning("This is a warning message.")
+if __name__ == "__main__":
+    logger = Logger("example_logger")
+    logger.info("This is an information message.")
+    logger.success("This is a success message.")
+    logger.error("This is an error message.")
+    logger.warning("This is a warning message.")
