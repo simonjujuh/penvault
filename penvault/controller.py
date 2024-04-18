@@ -170,10 +170,12 @@ class VaultController(object):
     def complete_all_vaults(self, prefix, parsed_args, **kwargs):
         veracrypt_fs_containers = []
 
+        # Get all .vc files from veracrypt container path
         for e in self._veracrypt_container_path.glob("*.vc*"):
-            v = self._container_to_vault(e)
+            v = self._container_to_vault(e) # convert veracrypt to vault
             veracrypt_fs_containers.append(v)
 
+        # TODO: make order
         return (vault for vault in veracrypt_fs_containers if vault.startswith(prefix))
     
     def complete_opened_vaults(self, prefix, parsed_args, **kwargs):
