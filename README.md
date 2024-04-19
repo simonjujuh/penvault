@@ -6,11 +6,10 @@
 Manage and automate pentest vaults creation with associated keepass entries.
 
 ## Installation
-
 - Install the dependencies
 ```bash
 sudo apt install veracrypt
-pip install .
+pip install --user .
 ```
 - Basic usage
 ```bash
@@ -30,9 +29,9 @@ eval "$(register-python-argcomplete penvault)"
 ```
 
 ## To-Do
-- [ ] Use a dedicated keepass DB for containers
 - [ ] Implement the prune feature
-- [ ] Add pentest template folder
-- [ ] Add pentest cheat sheets / MVP
-- [ ] Execute without argcomplete
 - [ ] Add an autoresize feature
+- [ ] Add pentest template folder
+- [x] Execute without argcomplete
+- [x] Order completions
+- [ ] Use a dedicated keepass DB for containers
