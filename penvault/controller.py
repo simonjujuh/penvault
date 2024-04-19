@@ -144,7 +144,6 @@ class VaultController(object):
             vault = self._container_to_vault(container['path'])
             log.success(f"{vault} at {container['mount point']}")
 
-
     def close_vault(self, vault_name):
         container_path = self._vault_to_container(vault_name)
 
@@ -168,21 +167,31 @@ class VaultController(object):
                 directory_path.rmdir()
 
     def complete_all_vaults(self, prefix, parsed_args, **kwargs):
+        # List of containers from filesystem
         veracrypt_fs_containers = []
 
-        # Get all .vc files from veracrypt container path
-        for e in self._veracrypt_container_path.glob("*.vc*"):
-            v = self._container_to_vault(e) # convert veracrypt to vault
-            veracrypt_fs_containers.append(v)
+        # Get all .vc files from veracrypt container path and add it to the list
+        for container in self._veracrypt_container_path.glob("*.vc*"):
+            vault = self._container_to_vault(container) # convert veracrypt to vault
+            veracrypt_fs_containers.append(vault)
 
-        # TODO: make order
-        return (vault for vault in veracrypt_fs_containers if vault.startswith(prefix))
+        # Build the completion tuple
+        complete_vaults = (vault for vault in veracrypt_fs_containers if vault.startswith(prefix))
+
+        # Return sorted tuple
+        return tuple(sorted(complete_vaults))
     
     def complete_opened_vaults(self, prefix, parsed_args, **kwargs):
         opened_vaults = []
+        # Get the mounted containers
         mounted_containers = veracrypt.list_mounted_containers()
 
+        # Build the liste of opened vaults
         for container in mounted_containers:
             opened_vaults.append(self._container_to_vault(container['path']))
-
-        return (vault for vault in opened_vaults if vault.startswith(prefix))
+        
+        # Build the completion tuple
+        complete_vaults = (vault for vault in opened_vaults if vault.startswith(prefix))
+        
+        # Return sorted tuple
+        return tuple(sorted(complete_vaults))
