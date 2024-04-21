@@ -2,6 +2,7 @@ import sys
 import yaml
 import string, secrets
 import shutil
+import datetime
 from pathlib import Path
 from penvault import veracrypt
 from penvault.logger import log
@@ -9,6 +10,7 @@ from penvault.logger import log
 
 class VaultController(object):
 
+    # Private methods
     def __init__(self) -> None:
         self._config_dir        = Path.home() / ".penvault"
         self._config_file_path  = self._config_dir / "config.yml" 
@@ -44,11 +46,6 @@ class VaultController(object):
         self._veracrypt_container_path  = Path(config['veracrypt']['container_path'])
         self._veracrypt_mount_path      = Path(config['veracrypt']['mount_path'])
 
-    def show_app_config(self):
-        log.info(f"config file is       : {self._config_file_path}")
-        log.info(f"veracrypt containers : {self._veracrypt_container_path}")
-        log.info(f"veracrypt mount path : {self._veracrypt_mount_path}")
-
     def _vault_to_container(self, vault_name):
         """
         """
@@ -58,6 +55,12 @@ class VaultController(object):
         """
         """
         return str(Path(container_name).name)[:-3]
+
+    # Public methods
+    def show_app_config(self):
+        log.info(f"config file is       : {self._config_file_path}")
+        log.info(f"veracrypt containers : {self._veracrypt_container_path}")
+        log.info(f"veracrypt mount path : {self._veracrypt_mount_path}")
 
     def create_vault(self, vault_name, vault_size, auto_mount=False):
         # Get the vault name
@@ -144,6 +147,35 @@ class VaultController(object):
             vault = self._container_to_vault(container['path'])
             log.success(f"{vault} at {container['mount point']}")
 
+    def prune_vaults(self):
+        # Get the current date
+        current_date = datetime.datetime.now()
+        no_delete = True
+
+        # Iterate over files in the directory
+        for container in self._veracrypt_container_path.iterdir():
+            # Check if it's a file
+            if container.is_file():
+                # Get the file's creation time
+                creation_time = datetime.datetime.fromtimestamp(container.stat().st_ctime)
+                # Calculate the difference in days
+                difference = (current_date - creation_time).days
+                # Check if the file is older than one year
+                if difference > 365:
+                    # Ask for confirmation
+                    # confirmation = input(f"Do you want to delete {file_path.name}? (Yes/No) ").lower()
+                    # if confirmation == 'yes':
+                    #     # Delete the file
+                    #     file_path.unlink()
+                    #     print(f"{file_path.name} successfully deleted.")
+                    log.warning(f'{container.name} is older than a year')
+                    no_delete = False
+        
+        if no_delete:
+            log.info(f'No containers ready for deletion')
+
+
+
     def close_vault(self, vault_name):
         container_path = self._vault_to_container(vault_name)
 
@@ -166,6 +198,7 @@ class VaultController(object):
             if directory_path.exists():
                 directory_path.rmdir()
 
+    # Completion methods
     def complete_all_vaults(self, prefix, parsed_args, **kwargs):
         # List of containers from filesystem
         veracrypt_fs_containers = []

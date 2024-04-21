@@ -28,6 +28,7 @@ def main():
         parser.add_argument('-o', '--open', help='Specify the name of the vault to open')
         parser.add_argument('-x', '--close', help='Specify the name of the vault to close')
 
+    parser.add_argument('--prune', action='store_true', default=False, help='Delete containers older than a year')
     parser.add_argument('--show-config', action='store_true', default=False, help='Automatically open the newly created container')
 
     if completion: 
@@ -50,10 +51,12 @@ def main():
         app.list_vaults()
     elif args.show_config:
         app.show_app_config()
+    # elif args.resize:
+    #     pass
+    elif args.prune:
+        app.prune_vaults()
     else:
         parser.print_help() 
-    # elif args.mode == 'prune':
-    #     prune_projects(args.option_prune)
 
 if __name__ == '__main__':
     main()
