@@ -1,3 +1,0 @@
-veracrypt:
-  container_path: /path/to/containers/folder
-  mount_path: /path/to/containers/mountpoint
