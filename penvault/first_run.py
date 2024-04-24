@@ -14,7 +14,7 @@ def first_run_setup():
             PENVAULT_PATH.mkdir()
 
         # Copy template configuration file to ~/.penvault/config.ini
-        template_file = DATA_PATH / "config_template.ini"
+        template_file = DATA_PATH / "config.ini"
         shutil.copyfile(template_file,CONFIG_PATH)
 
         # Inform end user to change config and exit
