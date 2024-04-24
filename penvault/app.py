@@ -8,6 +8,11 @@ from penvault import veracrypt
 from penvault.logger import log
 
 
+class Config(object):
+
+    def __init__(self,)
+
+
 class VaultController(object):
 
     # Private methods
@@ -26,16 +31,7 @@ class VaultController(object):
     def _check_first_run(self):
         """
         """
-        if not self._config_file_path.exists():
-            log.info("first run detected, installing the configuration file")
 
-            if not self._config_dir.exists():
-                self._config_dir.mkdir()
-
-            template_file = self._data_path / "config_template.yml"
-            shutil.copyfile(template_file, self._config_file_path)
-            log.info(f"please edit {self._config_file_path} with the value of your choice...")
-            sys.exit(0)
 
     def _load_config(self):
         """
