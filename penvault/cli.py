@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+from penvault.first_run import first_run_setup
 from penvault.controller import VaultController
 
 try:
@@ -12,6 +13,9 @@ except ImportError:
 
 
 def main():
+    # Check if first run
+    first_run_setup()
+
     app = VaultController()
 
     # Parse command line
