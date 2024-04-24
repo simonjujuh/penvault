@@ -18,5 +18,5 @@ def first_run_setup():
         shutil.copyfile(template_file,CONFIG_PATH)
 
         # Inform end user to change config and exit
-        log.info(f"please edit {self._config_file_path} with the value of your choice...")
+        log.info(f"please edit {CONFIG_PATH} with the value of your choice...")
         sys.exit(0)
