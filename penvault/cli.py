@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from penvault.controller import VaultController
+from penvault.app import Controller, Config
 
 try:
     import argcomplete
@@ -10,9 +10,9 @@ try:
 except ImportError:
     completion = False
 
-
 def main():
-    app = VaultController()
+    config = Config()
+    app = Controller()
 
     # Parse command line
     parser = argparse.ArgumentParser(description='Pentest Vaults Manager')
@@ -24,9 +24,12 @@ def main():
     if completion:
         parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open').completer = app.complete_all_vaults
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close').completer = app.complete_opened_vaults
+        parser.add_argument('--archive', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close').completer = None
     else:
         parser.add_argument('-o', '--open', help='Specify the name of the vault to open')
         parser.add_argument('-x', '--close', help='Specify the name of the vault to close')
+        parser.add_argument('-r', '--resize', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close').completer = None
+
 
     parser.add_argument('--prune', action='store_true', default=False, help='Delete containers older than a year')
     parser.add_argument('--show-config', action='store_true', default=False, help='Automatically open the newly created container')
@@ -47,12 +50,20 @@ def main():
     elif args.close:
         for vault in args.close:
             app.close_vault(vault)
+    # --list
     elif args.list:
         app.list_vaults()
+    # --show-config
     elif args.show_config:
         app.show_app_config()
-    # elif args.resize:
-    #     pass
+    # --resize
+    elif args.resize:
+        # Iterate over the vaults list
+        for vault in args.resize:
+            # Open vault if not mounted
+            pass
+                
+
     elif args.prune:
         app.prune_vaults()
     else:

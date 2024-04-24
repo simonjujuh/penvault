@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import pathlib
 
 def veracrypt_binary_path():
     verabin = shutil.which("veracrypt")
@@ -50,11 +51,20 @@ def list_mounted_containers():
     command = [veracrypt_binary_path(), "--text", "--list"]
     command_output = subprocess.run(command, text=True, capture_output=True)
 
-    # Parser les données
-    mounted_containers = []
+    mounted_containers = {}
     for line in command_output.stdout.split('\n'):
         if line.strip():
-            info = line.split(': ')
-            mounted_container.append(info[1].split())
+            info = line.split(' ')
+            mounted_containers.update({
+                pathlib.Path(info[1]): info[3]
+            })
 
-    return mount_container
+    # returns a dict
+    # {
+    #   PosixPath('...'): 'mount_point'
+    # }
+    return mounted_containers
+
+
+if __name__ == '__main__':
+    print(list_mounted_containers())
