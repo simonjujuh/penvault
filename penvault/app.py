@@ -1,17 +1,28 @@
-
-###
 import sys
-from penvault.first_run import first_run_setup
-
 from penvault.config import containers_path, mount_path
 from penvault.cli import build_cli_args
 from penvault.logger import log
 
-
 def main():
-    first_run_setup()
     args = build_cli_args()
     
+    if args.create:
+        pass
+        # if not args.size:
+        #     log.error("The --size option is required when --create is selected")
+        #     sys.exit(1)
+        # else:
+        #     app.create_vault(args.create, args.size, args.auto_mount)
+    elif args.open:
+        pass
+    elif args.close:
+        pass
+    elif args.list:
+        pass
+    elif args.resize:
+        pass
+    elif args.prune:
+        pass
 
 if __name__ == '__main__':
     main()

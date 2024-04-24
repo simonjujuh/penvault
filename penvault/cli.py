@@ -2,6 +2,7 @@ import sys
 import argparse
 from penvault.config import mount_path
 
+
 try:
     import argcomplete
     completion = True
@@ -33,13 +34,17 @@ def build_cli_args():
 
     # Check options
     parser.add_argument('--check-prune', action='store_true', default=False, help='Delete vaults older than a year')
-    parser.add_argument('--no-check-cleanup', action='store_true', default=False, help='Do not check for residual directories in {mount_path}')
-    # parser.add_argument('--show-config', action='store_true', default=False, help='Automatically open the newly created container')
+    parser.add_argument('--no-check-cleanup', action='store_true', default=False, help=f'Do not check for residual directories in {mount_path}')
 
     # if completion: 
     #     argcomplete.autocomplete(parser)
     
     args = parser.parse_args()
+
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
     return args
 
