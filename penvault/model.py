@@ -2,6 +2,7 @@ import sys
 import shutil
 import subprocess
 import string, secrets
+import datetime
 from pathlib import Path
 from penvault import veracrypt
 from penvault import config
@@ -11,9 +12,14 @@ class Vault(object):
     
     def __init__(self, name):
         self.name = name
+        if self.name.endswith('.vc'):
+            raise ValueError("Vault object cannot ends with '.vc'")
     
     def to_container(self):
         return config.containers_path / Path(self.name).with_suffix('.vc')
+
+    def from_container(self, container_path):
+        return Vault(container_path.with_suffix('').name)
 
     def create(self, size, auto_mount=False):
         # Get the vault name
@@ -64,83 +70,153 @@ class Vault(object):
         try:
             vault_mount_directory.mkdir(parents=False, exist_ok=True)
             veracrypt.mount_container(vc_path, vault_mount_directory, '') # empty password means it will be prompted
-            log.success(f"{vc_path.name} mounted: {vault_mount_directory}")
+            log.success(f"{self.name} mounted: {vault_mount_directory}")
         except Exception as e:
             log.error(f"unable to mount {self.name}: {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             vault_mount_directory.rmdir()
 
-
-
-
-
-
-
-
-
-
-
-
-
-class VeracryptContainer(object):
-
-    # def __init__(self, name):
-    #     self.path = 
-    
-    # def to_vault(self):
-    #     return self.path.name.with_suffix('').as_posix()
-
-
-
-
-
-    def open(self):
-        pass
-    
     def close(self):
-        pass
-    
+        vc_path = self.to_container()
+        print(vc_path)
+
+        # Check if container is mounted or not
+        if not self.is_mounted():
+            log.error(f"{self.name} not mounted, exiting")
+            sys.exit(1)
+
+        try:
+            veracrypt.umount_container(vc_path)
+            log.success(f"{self.name} unmounted successfully")
+        except Exception as e:
+            log.error(f"unable to dismount '{self.name}': {e}")
+            sys.exit(1)
+        except KeyboardInterrupt:
+            pass
+        else:
+            directory_path = config.mount_path / self.name
+            if directory_path.exists():
+                directory_path.rmdir()
+
     def is_mounted(self):
-        pass
+        # ...
+        vc_path = self.to_container()
+        if str(vc_path) in veracrypt.list_mounted_containers():
+            return True
+
+        return False
 
 
-class ContainersManager(object):
+class VaultsManager(object):
 
     def __init__(self):
         pass
 
-    def list(self, only_mounted=False):
+    def _refresh_list(self, mounted_only=False):
+        # Get the mounted containers
+        output = veracrypt.list_mounted_containers()
+        output_lines = output.strip().split('\n')
+
         containers = {}
 
+        # iterate over .vc files from system
         for file in config.containers_path.glob("*.vc*"):
-            containers.update(
-                {file: None}
-            )
- 
-        # Command output sample is:
-        # 1: /path/to/container.vc  /dev/mapper/veracrypt1  /path/to/mounted/container
-        # 2: /path/to/container2.vc  /dev/mapper/veracrypt2  /path/to/mounted/container2
-        veracrypt_ouput = veracrypt.list_mounted_containers()
-        # If there is at least one mounted container
-        if veracrypt_ouput:
-            # Iterate over each line
-            for line in command_output.stdout.split('\n'):
-                if line.strip():
-                    info = line.split(' ')
-                    file, mapper, path = info[1], info[2], info[3]
-                    containers[file] = {'mounted': path, 'mapper': mapper}
+            # convert Path to str
+            file = str(file)
+            # convert filename to vault for dictionary keys
+            vault = Vault('').from_container(Path(file))
 
-        # Display the list of containers
-        log.info("Available containers:")
+            # the veracrypt container is mounted
+            if file in output:
+                print("here")
+                # extract the associated line
+                for line in output_lines:
+                    if file in line:
+                        mount_line = line
+                        break
+                
+                info = mount_line.split(' ')
+                file, mapper, path = info[1], info[2], info[3]
+        
+                containers[vault.name] = {'mount': path, 'mapper': mapper}
+            else:
+                containers[vault.name] = None
 
-        # Sort the containers dict
+        return containers
+        
+    def list(self):
+
+        containers = self._refresh_list()
         containers = dict(sorted(containers.items()))
-        for container, mount_info in containers.items():
-            log.success(str(container))
-            log.warning(str(mount_info))
 
-    
+        log.info('Available vaults:')
+        i = 1
+        for key, value in containers.items():
+            # unmounted container
+            if value is None:
+                print(f'{str(i).rjust(2)}: {key.ljust(30)}')
+            else:
+                mount = value['mount']
+                print(f'{str(i).rjust(2)}: {key.ljust(30)} @ {mount} ')
+
+            i = i + 1
+
     def prune(self):
-        pass
+        # Get the current date
+        current_date = datetime.datetime.now()
+        no_delete = True
 
+        # Iterate over files in the directory
+        for container in config.containers_path.iterdir():
+            # Check if it's a file
+            if container.is_file():
+                # Get the file's creation time
+                creation_time = datetime.datetime.fromtimestamp(container.stat().st_ctime)
+                # Calculate the difference in days
+                difference = (current_date - creation_time).days
+                # Check if the file is older than one year
+                if difference > 365:
+                    # Ask for confirmation
+                    # confirmation = input(f"Do you want to delete {file_path.name}? (Yes/No) ").lower()
+                    # if confirmation == 'yes':
+                    #     # Delete the file
+                    #     file_path.unlink()
+                    #     print(f"{file_path.name} successfully deleted.")
+                    v = Vault('').from_container(container)
+                    log.warning(f'{v.name} is older than a year')
+                    no_delete = False
+        
+        if no_delete:
+            log.info(f'No containers ready for deletion')
+    
+    # Completion methods
+    def complete_all_vaults(self, prefix, parsed_args, **kwargs):
+        # List of containers from filesystem
+        veracrypt_fs_containers = []
+
+        # Get all .vc files from veracrypt container path and add it to the list
+        for container in self._veracrypt_container_path.glob("*.vc*"):
+            vault = self._container_to_vault(container) # convert veracrypt to vault
+            veracrypt_fs_containers.append(vault)
+
+        # Build the completion tuple
+        complete_vaults = (vault for vault in veracrypt_fs_containers if vault.startswith(prefix))
+
+        # Return sorted tuple
+        return tuple(sorted(complete_vaults))
+    
+    def complete_opened_vaults(self, prefix, parsed_args, **kwargs):
+        opened_vaults = []
+        # Get the mounted containers
+        mounted_containers = veracrypt.list_mounted_containers()
+
+        # Build the liste of opened vaults
+        for container in mounted_containers:
+            opened_vaults.append(self._container_to_vault(container['path']))
+        
+        # Build the completion tuple
+        complete_vaults = (vault for vault in opened_vaults if vault.startswith(prefix))
+        
+        # Return sorted tuple
+        return tuple(sorted(complete_vaults))
