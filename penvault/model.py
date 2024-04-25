@@ -8,6 +8,7 @@ from penvault import veracrypt
 from penvault import config
 from penvault.logger import log
 
+
 class Vault(object):
     
     def __init__(self, name):
@@ -79,7 +80,6 @@ class Vault(object):
 
     def close(self):
         vc_path = self.to_container()
-        print(vc_path)
 
         # Check if container is mounted or not
         if not self.is_mounted():
@@ -129,7 +129,6 @@ class VaultsManager(object):
 
             # the veracrypt container is mounted
             if file in output:
-                print("here")
                 # extract the associated line
                 for line in output_lines:
                     if file in line:
