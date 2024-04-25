@@ -2,25 +2,49 @@ import sys
 from penvault.config import containers_path, mount_path
 from penvault.cli import build_cli_args
 from penvault.logger import log
+from penvault.model import ContainersManager, Vault
 
 def main():
     args = build_cli_args()
     
+    # Create instances
+    manager = ContainersManager()
+
+
+    # penvault.py --auto-mount --create <VAULT> --size <SIZE> --template <NAME>
     if args.create:
-        pass
-        # if not args.size:
-        #     log.error("The --size option is required when --create is selected")
-        #     sys.exit(1)
-        # else:
-        #     app.create_vault(args.create, args.size, args.auto_mount)
+        if not args.size:
+            log.error("The --size option is required when --create is selected")
+            sys.exit(1)
+        else:
+            vault = Vault(args.create)
+            vault.create(args.size, auto_mount=args.auto_mount)
+    
+    # penvault.py --open <VAULT>
     elif args.open:
-        pass
-    elif args.close:
-        pass
-    elif args.list:
-        pass
+        # open accept mutliple vaults
+        for vault in args.open:
+            pass
+
+    # penvault.py --resize <VAULT>
     elif args.resize:
-        pass
+        # resize accept mutliple vaults
+        for vault in args.resize:
+            pass
+
+    # penvault.py --close <VAULT>
+    elif args.close:
+        # close accept mutliple vaults
+        for vault in args.close:
+            pass
+
+    # Available containers:
+    # 01: vault 1 </path/>
+    # 02: vault 2
+    # 03: vault 3
+    # 04: vault 4 </path/>
+    elif args.list: 
+        manager.list()
     elif args.prune:
         pass
 
@@ -55,89 +79,14 @@ if __name__ == '__main__':
 #         log.info(f"veracrypt mount path : {self._veracrypt_mount_path}")
 
 #     def create_vault(self, vault_name, vault_size, auto_mount=False):
-#         # Get the vault name
-#         container_path = Path(self._vault_to_container(vault_name))
 
-#         # Generate random password
-#         length = 30
-#         characters = string.ascii_letters + string.digits + string.punctuation
-#         password = ''.join(secrets.choice(characters) for _ in range(length))
 
-#         # Do not overwrite an existing container
-#         if container_path.exists():
-#             log.error(f"{container_path.name} already exists, please use another vault name")
-#             sys.exit(1)
 
-#         # Create a container
-#         try:
-#             veracrypt.create_container(container_path, vault_size, password)
-#             log.success(f"{container_path.name} created successfully with password {password}")
-#         except Exception as e:
-#             log.error(f"unable to create {container_path}: {e}")
-#             sys.exit(1)
-#         except KeyboardInterrupt:
-#             pass
-#         finally:
-#             if auto_mount:
-#                 self.open_vault(vault_name)
-
-#     def open_vault(self, vault_name):
-#         # Get the vault name
-#         container_path = Path(self._vault_to_container(vault_name))
-
-#         # Check if container path exists
-#         if not container_path.exists():
-#             log.error(f"{container_path} does not exist, exiting.")
-#             sys.exit(1)
-
-#         # Check if veracrypt mount path exists
-#         if not self._veracrypt_mount_path.exists():
-#             log.error(f"{self._veracrypt_mount_path} mount point does not exist, exiting.")
-#             sys.exit(1)
-        
-#         # Mount container
-#         directory_path = self._veracrypt_mount_path / vault_name
-
-#         # Creating the directory if it doesn't exist
-#         try:
-#             directory_path.mkdir(parents=False, exist_ok=True)
-#             veracrypt.mount_container(container_path, directory_path, '') # empty password means it will be prompted
-#             log.success(f"{container_path.name} mounted: {directory_path}")
-#         except Exception as e:
-#             log.error(f"unable to mount {container_path}: {e}")
-#             sys.exit(1)
-#         except KeyboardInterrupt:
-#             directory_path.rmdir()
 
 #     def list_vaults(self):
 #         """
 #         """
-#         # Fetch the mounted container list
-#         mounted_containers = veracrypt.list_mounted_containers()
 
-#         # Get .vc containers from the filesystem
-#         # Use a regular expression to filter VeraCrypt files
-#         veracrypt_fs_containers = [str(e) for e in self._veracrypt_container_path.glob("*.vc*")]
-#         veracrypt_fs_containers.sort()
-
-#         for container in mounted_containers:
-#             # vault = self._container_to_vault(container['path'])
-#             # print(f"{vault.ljust(35)} {container['mount point']}")
-#             veracrypt_fs_containers.remove(container['path'])
-        
-#         dismounted_containers = []
-#         for container in veracrypt_fs_containers:
-#             vault = self._container_to_vault(container)
-#             dismounted_containers.append(vault)
-
-#         log.info("list of dismounted containers")
-#         [log.success(container) for container in dismounted_containers]
-        
-#         print() # newline
-#         log.info("list of mounted containers")
-#         for container in mounted_containers:
-#             vault = self._container_to_vault(container['path'])
-#             log.success(f"{vault} at {container['mount point']}")
 
 #     def prune_vaults(self):
 #         # Get the current date

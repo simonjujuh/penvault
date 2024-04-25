@@ -41,3 +41,11 @@ def umount_container(container_path):
     command = [verabin, "--text", "--dismount", str(container_path)]
 
     subprocess.run(command, text=True, check=True)
+
+
+def list_mounted_containers():
+    command = [verabin, "--text", "--list"]
+    command_output = subprocess.run(command, text=True, capture_output=True)
+
+    return command_output.stdout
+
