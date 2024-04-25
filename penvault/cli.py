@@ -1,5 +1,6 @@
 import sys
 import argparse
+from penvault.completion import *
 from penvault.config import mount_path
 
 
@@ -20,14 +21,13 @@ def build_cli_args():
     parser.add_argument('-s', '--size', help='Specify the size for the new vault container')
     parser.add_argument('-a', '--auto-mount', action='store_true', default=False, help='Automatically open the newly created container')
 
-    # if completion:
-    #     parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open').completer = app.complete_all_vaults
-    #     parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close').completer = app.complete_opened_vaults
-    # else:
-
-    # Open and close
-    parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Open vault(s)')
-    parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Close vault(s)')
+    if completion:
+        
+        parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open').completer = complete_all_vaults
+        parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close').completer = complete_opened_vaults
+    else:
+        parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Open vault(s)')
+        parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Close vault(s)')
 
     # Resize vaults
     parser.add_argument('-r', '--resize', metavar='VAULT', type=str, nargs='+', help='Resize vault(s) to optimum space')
