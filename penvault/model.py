@@ -48,7 +48,7 @@ class Vault(object):
         finally:
             if auto_mount:
                 pass
-                # self.open_vault(vault_name)
+                self.open()
 
     def open(self):
         # Get the vault name
@@ -204,6 +204,6 @@ class VaultsManager(object):
                 continue
             else:
                 # If not, print a warning and optionally remove the directory
-                log.warning(f"{directory.name} is a residual folder, deleting it")
+                log.warning(f"{directory} is a residual folder, deleting it")
                 # Remove the directory (use with caution)
                 directory.rmdir()  # Uncomment to enable deletion
