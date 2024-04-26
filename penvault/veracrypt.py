@@ -1,18 +1,14 @@
 import shutil
 import subprocess
-import pathlib
 
-def veracrypt_binary_path():
-    verabin = shutil.which("veracrypt")
-    if not verabin:
-        raise Exception('Veracryt is not in your PATH')
-    
-    return verabin
+
+verabin = shutil.which("veracrypt")
+if not verabin:
+    raise Exception('Veracryt is not in your PATH')
 
 
 def create_container(container_path, project_size, password):
-    # check if path already exists
-    command = [veracrypt_binary_path(), "--text", "--create", 
+    command = [verabin, "--text", "--create", 
                str(container_path),
                f"--size={project_size}", 
                f"--password={password}", 
@@ -29,7 +25,7 @@ def create_container(container_path, project_size, password):
     
 
 def mount_container(container_path, mount_path, password):
-    command = [veracrypt_binary_path(), "--text", "--mount", 
+    command = [verabin, "--text", "--mount", 
                 str(container_path),
                 str(mount_path),
                 f"--password={password}",
@@ -42,29 +38,14 @@ def mount_container(container_path, mount_path, password):
 
 
 def umount_container(container_path):
-    command = [veracrypt_binary_path(), "--text", "--dismount", str(container_path)]
+    command = [verabin, "--text", "--dismount", str(container_path)]
 
     subprocess.run(command, text=True, check=True)
 
 
 def list_mounted_containers():
-    command = [veracrypt_binary_path(), "--text", "--list"]
+    command = [verabin, "--text", "--list"]
     command_output = subprocess.run(command, text=True, capture_output=True)
 
-    mounted_containers = {}
-    for line in command_output.stdout.split('\n'):
-        if line.strip():
-            info = line.split(' ')
-            mounted_containers.update({
-                pathlib.Path(info[1]): info[3]
-            })
+    return command_output.stdout
 
-    # returns a dict
-    # {
-    #   PosixPath('...'): 'mount_point'
-    # }
-    return mounted_containers
-
-
-if __name__ == '__main__':
-    print(list_mounted_containers())

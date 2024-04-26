@@ -29,9 +29,8 @@ eval "$(register-python-argcomplete penvault)"
 ```
 
 ## To-Do
+- [x] Change configuration file type
+- [x] Add a cleanup feature at startup
 - [ ] Add an autoresize feature
 - [ ] Add pentest template folder
-- [x] Implement the prune feature
-- [x] Execute without argcomplete
-- [x] Order completions
 - [ ] Use a dedicated keepass DB for containers
