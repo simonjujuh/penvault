@@ -34,7 +34,7 @@ def build_cli_args():
 
     # Check options
     parser.add_argument('--check-prune', action='store_true', default=False, help='Delete vaults older than a year')
-    parser.add_argument('--no-check-cleanup', action='store_true', default=False, help=f'Do not check for residual directories in {mount_path}')
+    parser.add_argument('--check-cleanup', action='store_true', default=True, help=f'Check for residual directories in {mount_path} (default: True)')
 
     # if completion: 
     #     argcomplete.autocomplete(parser)

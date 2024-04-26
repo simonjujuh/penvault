@@ -192,3 +192,18 @@ class VaultsManager(object):
         if no_delete:
             log.info(f'No containers ready for deletion')
     
+    def cleanup(self):
+        # List directories in the config.mount_path
+        directories = [entry for entry in config.mount_path.iterdir() if entry.is_dir()]
+        
+        # Check each directory
+        for directory in directories:
+            # Check if the directory is present in the list of mounted containers
+            if directory.name in veracrypt.list_mounted_containers():
+                # If yes, move to the next directory
+                continue
+            else:
+                # If not, print a warning and optionally remove the directory
+                log.warning(f"{directory.name} is a residual folder, deleting it")
+                # Remove the directory (use with caution)
+                directory.rmdir()  # Uncomment to enable deletion

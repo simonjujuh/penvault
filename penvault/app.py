@@ -10,6 +10,8 @@ def main():
     # Create instances
     manager = VaultsManager()
 
+    if args.check_cleanup:
+        manager.cleanup()
 
     # penvault.py --auto-mount --create <VAULT> --size <SIZE> --template <NAME>
     if args.create:
@@ -45,8 +47,10 @@ def main():
     # 04: vault 4 </path/>
     elif args.list: 
         manager.list()
-    elif args.check_prune:
+
+    if args.check_prune:
         manager.prune()
+    
 
 if __name__ == '__main__':
     main()
