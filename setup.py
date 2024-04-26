@@ -7,7 +7,7 @@ setup(
     package_data={'penvault': ['data/*']},
     entry_points={
         'console_scripts': [
-            'penvault=penvault.cli:main',
+            'penvault=penvault.app:main',
         ],
     },
 )
