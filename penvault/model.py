@@ -203,7 +203,14 @@ class VaultsManager(object):
                 # If yes, move to the next directory
                 continue
             else:
-                # If not, print a warning and optionally remove the directory
-                log.warning(f"{directory} is a residual folder, deleting it")
-                # Remove the directory (use with caution)
-                directory.rmdir()  # Uncomment to enable deletion
+                empty = True
+                for _ in directory.iterdir():
+                    # If there's at least one item, the directory is not empty
+                    empty = False
+
+                if empty:
+                    # If not, print a warning and optionally remove the directory
+                    log.warning(f"{directory} is a residual folder, deleting it")
+                    # Remove the directory (use with caution)
+                    # directory.rmdir()  # Uncomment to enable deletion
+
