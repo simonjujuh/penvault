@@ -1,8 +1,7 @@
 import sys
-import shutil
-import subprocess
 import string, secrets
 import datetime
+from colorama import init, Fore, Style
 from pathlib import Path
 from penvault import veracrypt
 from penvault import config
@@ -210,7 +209,19 @@ class VaultsManager(object):
 
                 if empty:
                     # If not, print a warning and optionally remove the directory
-                    log.warning(f"{directory} is a residual folder, deleting it")
                     # Remove the directory (use with caution)
-                    # directory.rmdir()  # Uncomment to enable deletion
+                    while True:
+                        user_input = input(Fore.YELLOW + "[!] " 
+                                           + Style.RESET_ALL 
+                                           + f"'{directory}' is a residual folder, do you want to delete it? [y/N] ").strip().lower()
+                        if user_input == 'y':
+                            directory.rmdir()
+                            log.info(f"'{directory}' deleted")
+                            break
+                        elif user_input == 'n' or user_input == '':
+                            log.info(f"'{directory}' not deleted")
+                            break
+                        else:
+                            continue
+
 
