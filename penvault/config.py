@@ -21,3 +21,19 @@ mount_path = Path(config.get("containers", "mount_path"))
 if not mount_path.exists():
     log.error(f"error while loading config: {mount_path} does not exist")
     sys.exit(1)
+
+
+# THESE OPTIONS ARE OPTIONAL IN THE DEFAULT CONFIG FILE
+# Vérifiez si la section optionnelle existe
+if 'template' in config:
+    
+    # Accédez aux valeurs de la section optionnelle
+    if config.get("template", "template_path"):
+        template_path = Path(config.get("template", "template_path"))
+        if not template_path.exists():
+            log.error(f"error while loading config: {template_path} does not exist or is empty")
+            sys.exit(1)
+    else:
+        template_path = None
+else:
+    template_path = None

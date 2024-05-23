@@ -1,5 +1,5 @@
 import sys
-from penvault.config import containers_path, mount_path
+from penvault.config import containers_path, mount_path, template_path
 from penvault.cli import build_cli_args
 from penvault.logger import log
 from penvault.model import VaultsManager, Vault
@@ -13,14 +13,13 @@ def main():
     if args.check_cleanup:
         manager.cleanup()
 
-    # penvault.py --auto-mount --create <VAULT> --size <SIZE> --template <NAME>
     if args.create:
         if not args.size:
             log.error("The --size option is required when --create is selected")
             sys.exit(1)
         else:
             vault = Vault(args.create)
-            vault.create(args.size, auto_mount=args.auto_mount)
+            vault.create(args.size, auto_mount=args.auto_mount, template_path=template_path)
     
     # penvault.py --open <VAULT>
     elif args.open:

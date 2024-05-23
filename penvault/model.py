@@ -1,6 +1,7 @@
 import sys
 import string, secrets
 import datetime
+import shutil
 from colorama import init, Fore, Style
 from pathlib import Path
 from penvault import veracrypt
@@ -21,7 +22,7 @@ class Vault(object):
     def from_container(self, container_path):
         return Vault(container_path.with_suffix('').name)
 
-    def create(self, size, auto_mount=False):
+    def create(self, size, auto_mount=False, template_path=None):
         # Get the vault name
         vc_path = self.to_container()
 
@@ -46,8 +47,22 @@ class Vault(object):
             pass
         finally:
             if auto_mount:
-                pass
                 self.open()
+                if template_path:
+                    log.info(f"Template {template_path} is configured and will be copied")
+                    # Copy template path
+                    mounted_at = config.mount_path / self.name
+
+                    # Ensure that the directory is mounted
+                    if mounted_at:
+                        # Copy the template to the mounted directory
+                        for item in template_path.iterdir():
+                            if item.is_dir():
+                                shutil.copytree(item, mounted_at / item.name)
+                            else:
+                                shutil.copy2(item, mounted_at)
+                    else:
+                        log.warning(f"Could not copy template because {mounted_at} does not exist")
 
     def open(self):
         # Get the vault name
