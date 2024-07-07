@@ -79,7 +79,7 @@ class Vault(object):
             self.close()
            
 
-    def open(self, password):
+    def open(self, password=''):
         # Get the vault name
         container_path = self.to_container()
 
