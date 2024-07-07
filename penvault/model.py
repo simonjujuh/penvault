@@ -10,12 +10,22 @@ from penvault.logger import log
 
 
 class Vault(object):
+    """
+    A class to manage pentest vaults securely with GPG or Veracrypt.
+
+    Vaults are abstract projects name, described with a single name. Containers, on 
+    the other hand refer to the associated full path on the system, ending with
+    .gpg or .vc extension.
+    """
     
-    def __init__(self, name):
+    def __init__(self, name, encryption_method='gpg'):
         self.name = name
+        self.encryption_method = encryption_method
+        
+        # Check objects attributes values
         if self.name.endswith('.vc'):
-            raise ValueError("Vault object cannot ends with '.vc'")
-    
+            raise ValueError("Vault object cannot end with '.vc' extension")
+
     def to_container(self):
         return config.containers_path / Path(self.name).with_suffix('.vc')
 
@@ -24,7 +34,7 @@ class Vault(object):
 
     def create(self, size, auto_mount=False, template_path=None):
         # Get the vault name
-        vc_path = self.to_container()
+        container_path = self.to_container()
 
         # Generate random password
         length = 30
@@ -32,44 +42,49 @@ class Vault(object):
         password = ''.join(secrets.choice(characters) for _ in range(length))
 
         # Do not overwrite an existing container
-        if vc_path.exists():
-            log.error(f"{vc_path} already exists, please use another vault name")
+        if container_path.exists():
+            log.error(f"{container_path} already exists, please use another vault name")
             sys.exit(1)
+        else:
+            # Create a Veracrypt container
+            try:
+                veracrypt.create_container(container_path, size, password)
+                log.success(f"{self.name} created successfully with password {password}")
+            except Exception as e:
+                log.error(f"unable to create {container_path}: {e}")
+                sys.exit(1)
+        
+        # Open the freshly created container
+        self.open(password)
 
-        # Create a container
-        try:
-            veracrypt.create_container(vc_path, size, password)
-            log.success(f"{self.name} created successfully with password {password}")
-        except Exception as e:
-            log.error(f"unable to create {vc_path}: {e}")
-            sys.exit(1)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            if auto_mount:
-                self.open()
-                if template_path:
-                    log.info(f"Template {template_path} is configured and will be copied")
-                    # Copy template path
-                    mounted_at = config.mount_path / self.name
+        # If template folder is configured, copy it
+        if template_path:
+            log.info(f"Template {template_path} is configured and will be copied")
+            # Copy template path
+            mounted_at = config.mount_path / self.name
 
-                    # Ensure that the directory is mounted
-                    if mounted_at:
-                        # Copy the template to the mounted directory
-                        for item in template_path.iterdir():
-                            if item.is_dir():
-                                shutil.copytree(item, mounted_at / item.name)
-                            else:
-                                shutil.copy2(item, mounted_at)
+            # Ensure that the directory is mounted
+            if mounted_at:
+                # Copy the template to the mounted directory
+                for item in template_path.iterdir():
+                    if item.is_dir():
+                        shutil.copytree(item, mounted_at / item.name)
                     else:
-                        log.warning(f"Could not copy template because {mounted_at} does not exist")
+                        shutil.copy2(item, mounted_at)
+            else:
+                log.warning(f"Could not copy template because {mounted_at} does not exist")
 
-    def open(self):
+        # If auto mount is not selected, close the created container
+        if not auto_mount:
+            self.close()
+           
+
+    def open(self, password):
         # Get the vault name
-        vc_path = self.to_container()
+        container_path = self.to_container()
 
         # Check if container path exists
-        if not vc_path.exists():
+        if not container_path.exists():
             log.error(f"{self.name} does not exist, exiting.")
             sys.exit(1)
 
@@ -84,7 +99,7 @@ class Vault(object):
         # Creating the directory if it doesn't exist
         try:
             vault_mount_directory.mkdir(parents=False, exist_ok=True)
-            veracrypt.mount_container(vc_path, vault_mount_directory, '') # empty password means it will be prompted
+            veracrypt.mount_container(container_path, vault_mount_directory, password) # empty password means it will be prompted
             log.success(f"{self.name} mounted: {vault_mount_directory}")
         except Exception as e:
             log.error(f"unable to mount {self.name}: {e}")
@@ -93,7 +108,7 @@ class Vault(object):
             vault_mount_directory.rmdir()
 
     def close(self):
-        vc_path = self.to_container()
+        container_path = self.to_container()
 
         # Check if container is mounted or not
         if not self.is_mounted():
@@ -101,7 +116,7 @@ class Vault(object):
             sys.exit(1)
 
         try:
-            veracrypt.umount_container(vc_path)
+            veracrypt.umount_container(container_path)
             log.success(f"{self.name} unmounted successfully")
         except Exception as e:
             log.error(f"unable to dismount '{self.name}': {e}")
@@ -115,8 +130,8 @@ class Vault(object):
 
     def is_mounted(self):
         # ...
-        vc_path = self.to_container()
-        if str(vc_path) in veracrypt.list_mounted_containers():
+        container_path = self.to_container()
+        if str(container_path) in veracrypt.list_mounted_containers():
             return True
 
         return False
