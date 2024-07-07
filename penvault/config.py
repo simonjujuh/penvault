@@ -12,7 +12,7 @@ config = configparser.ConfigParser()
 config.read(CONFIG_PATH)
 
 # THESE OPTIONS HAVE TO EXIST IN THE DEFAULT CONFIG FILE
-containers_path = Path(config.get("containers", "veracrypts_path"))
+containers_path = Path(config.get("containers", "containers_path"))
 if not containers_path.exists():
     log.error(f"error while loading config: {containers_path} does not exist")
     sys.exit(1)
