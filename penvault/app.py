@@ -28,10 +28,10 @@ def main():
             Vault(vault_name).open()
 
     # penvault.py --resize <VAULT>
-    elif args.resize:
-        # resize accept mutliple vaults
-        for vault in args.resize:
-            pass
+    # elif args.resize:
+    #     # resize accept mutliple vaults
+    #     for vault in args.resize:
+    #         pass
 
     # penvault.py --close <VAULT>
     elif args.close:

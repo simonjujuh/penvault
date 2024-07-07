@@ -3,7 +3,7 @@ import argparse
 from penvault.completion import *
 from penvault.config import mount_path
 
-VERSION = "1.1"
+VERSION = "1.2.0-dev" # to change
 
 def build_cli_args():
 
@@ -12,24 +12,24 @@ def build_cli_args():
         completion = True
     except ImportError:
         completion = False
-    
+
     parser = argparse.ArgumentParser(description=f'Pentest Vaults Manager {VERSION}')
-    # List
+
+    # List options
     parser.add_argument('-l', '--list', action='store_true', help='List vaults')
-    # Create
+    
+    # Create options
     parser.add_argument('-c', '--create', help='Specify the name for the new vault')
     parser.add_argument('-s', '--size', help='Specify the size for the new vault container')
     parser.add_argument('-a', '--auto-mount', action='store_true', default=False, help='Automatically open the newly created container')
 
-    if completion:  
+    # Open, close and archive options
+    if completion:
         parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open', choices=complete_all_vaults())
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close', choices=complete_opened_vaults())
-        parser.add_argument('-r', '--resize', metavar='VAULT', type=str, nargs='+', help='Resize vault(s) to optimum space (WIP)', choices=complete_closed_vaults())
-
     else:
         parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Open vault(s)')
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Close vault(s)')
-        parser.add_argument('-r', '--resize', metavar='VAULT', type=str, nargs='+', help='Resize vault(s) to optimum space (WIP)')
 
     # Check options
     parser.add_argument('--check-prune', action='store_true', default=False, help='Delete vaults older than a year')
