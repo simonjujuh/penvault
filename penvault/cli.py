@@ -27,9 +27,12 @@ def build_cli_args():
     if completion:
         parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open', choices=complete_all_vaults())
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close', choices=complete_opened_vaults())
+        parser.add_argument('-z', '--archive', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to archive', choices=complete_all_vaults())
+
     else:
         parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Open vault(s)')
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Close vault(s)')
+        parser.add_argument('-z', '--archive', metavar='VAULT', type=str, nargs='+', help='Archive vault(s)')
 
     # Check options
     parser.add_argument('--check-prune', action='store_true', default=False, help='Delete vaults older than a year')

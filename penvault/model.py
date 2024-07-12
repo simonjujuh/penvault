@@ -3,11 +3,24 @@ import string, secrets
 import datetime
 import shutil
 import tempfile
+import py7zr
+import subprocess
 from colorama import init, Fore, Style
 from pathlib import Path
 from penvault import veracrypt
 from penvault import config
 from penvault.logger import log
+
+
+def run_as_sudo(command):
+    """
+    Run a command with sudo privileges and prompt for password if needed.
+    """
+    try:
+        result = subprocess.run(['sudo'] + command, check=True, text=True)
+        # print(f"Command '{' '.join(command)}' executed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
 
 
 class Vault(object):
@@ -131,26 +144,25 @@ class Vault(object):
         """
         Convert a Veracrypt container to an tar.gz encrypted archive, mainly for storage purpose
         """
-        log.info("Starting to archive {self.name}")
+        log.info(f"Starting to archive {self.name}")
+
+        # if os.geteuid() != 0:
+        #     log.error('This operation requires root privileges to preserve files and directories permissions')
+        #     log.error('Try running it with sudo')
+        #     return 
 
         # Open the vault
-        self.open(password)
+        if not self.is_mounted():
+            self.open(password)
 
-        # Change owner of all stored files
-
-        # # Get the current user's UID and GID
-        # if user is None:
-        #     user = os.getenv("USER")
+        # Get the current user's UID and GID
+        user = os.getenv("USER")
             
-        # uid = int(subprocess.check_output(['id', '-u', user]))
-        # gid = int(subprocess.check_output(['id', '-g', user]))
+        uid = int(subprocess.check_output(['id', '-u', user]))
+        gid = int(subprocess.check_output(['id', '-g', user]))
 
-        # # Change ownership for all files and directories in the given path
-        # for root, dirs, files in os.walk(path):
-        #     for momo in dirs + files:
-        #         momo_path = Path(root) / momo
-        #         log.info(f"Changing ownership of {momo_path} to {user} (UID: {uid}, GID: {gid})")
-        #         os.chown(momo_path, uid, gid)
+        # Change ownership for all files and directories in the given path
+        run_as_sudo(['chown', '-R', f'{uid}:{gid}', self.mount_point()])
 
         # Make a temporary directory
         with tempfile.TemporaryDirectory(dir=config.containers_path) as temp_dir:
@@ -164,19 +176,27 @@ class Vault(object):
                 if not src_path.exists():
                     raise FileNotFoundError(f"The directory '{src_path}' does not exist")
 
-                shutil.copytree(src_path, temp_path)
-                log.info(f"The directory '{src_dir}' was moved to '{dst_dir}'")
+                shutil.copytree(str(src_path), str(temp_path), dirs_exist_ok=True)
+                # log.info(f"The directory '{src_path}' was copied to '{temp_path}'")
+
+                # Rename temporary directory
+                archive_directory = str(config.containers_path / self.name)
+                shutil.move(temp_path, archive_directory)
+                # log.info(f"The directory '{temp_path}' was renamed to '{archive_directory}'")
+
             except Exception as e:
                 print(f"An error occured while moving veracrypt content: {e}")
 
-        # Rename temporary directory
-        archive_directory = str(self.containers_path / self.name.with_suffix(''))
-        shutil.move(str(temp_path), archive_directory)
+            # Start the archive process        
+            with py7zr.SevenZipFile(archive_directory + '.7z', 'w', password=password) as archive:
+                # Add the folder to the archive
+                archive.writeall(archive_directory, os.path.basename(archive_directory))
 
-        # 
-
-        # Delete veracrypt vault
-        # TODO
+            # Delete veracrypt vault
+            self.close()
+            shutil.rmtree(archive_directory)
+            os.remove(str(self._to_file_path()))
+            log.success(f"Archive {archive_directory + '.7z'} created ({self._to_file_path()} removed)")
 
     def mount_point(self):
         container_path = self._to_file_path()
