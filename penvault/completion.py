@@ -10,7 +10,7 @@ def complete_all_vaults():
 
     # Get all .vc files from veracrypt container path and add it to the list
     for container in config.containers_path.glob("*.vc*"):
-        vault = Vault('').from_container(container) # convert veracrypt to vault
+        vault = Vault('')._from_file_path(container) # convert veracrypt to vault
         veracrypt_fs_containers.append(vault.name)
 
     veracrypt_fs_containers.sort()
@@ -25,7 +25,7 @@ def complete_opened_vaults():
     # Build the liste of opened vaults
     for vc_path in mounted_containers.keys():
         vc_path = Path(vc_path)
-        v = Vault('').from_container(vc_path)
+        v = Vault('')._from_file_path(vc_path)
         opened_vaults.append(v.name)
     
     opened_vaults.sort()

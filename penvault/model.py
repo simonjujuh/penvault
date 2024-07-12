@@ -1,7 +1,8 @@
-import sys
+import sys, os
 import string, secrets
 import datetime
 import shutil
+import tempfile
 from colorama import init, Fore, Style
 from pathlib import Path
 from penvault import veracrypt
@@ -18,23 +19,22 @@ class Vault(object):
     .gpg or .vc extension.
     """
     
-    def __init__(self, name, encryption_method='gpg'):
+    def __init__(self, name):
         self.name = name
-        self.encryption_method = encryption_method
         
         # Check objects attributes values
         if self.name.endswith('.vc'):
             raise ValueError("Vault object cannot end with '.vc' extension")
 
-    def to_container(self):
+    def _to_file_path(self):
         return config.containers_path / Path(self.name).with_suffix('.vc')
 
-    def from_container(self, container_path):
+    def _from_file_path(self, container_path):
         return Vault(container_path.with_suffix('').name)
 
     def create(self, size, auto_mount=False, template_path=None):
         # Get the vault name
-        container_path = self.to_container()
+        container_path = self._to_file_path()
 
         # Generate random password
         length = 30
@@ -78,10 +78,9 @@ class Vault(object):
         if not auto_mount:
             self.close()
            
-
     def open(self, password=''):
         # Get the vault name
-        container_path = self.to_container()
+        container_path = self._to_file_path()
 
         # Check if container path exists
         if not container_path.exists():
@@ -108,7 +107,7 @@ class Vault(object):
             vault_mount_directory.rmdir()
 
     def close(self):
-        container_path = self.to_container()
+        container_path = self._to_file_path()
 
         # Check if container is mounted or not
         if not self.is_mounted():
@@ -128,13 +127,73 @@ class Vault(object):
             if directory_path.exists():
                 directory_path.rmdir()
 
-    def is_mounted(self):
-        # ...
-        container_path = self.to_container()
-        if str(container_path) in veracrypt.list_mounted_containers():
-            return True
+    def archive(self, password=''):
+        """
+        Convert a Veracrypt container to an tar.gz encrypted archive, mainly for storage purpose
+        """
+        log.info("Starting to archive {self.name}")
 
-        return False
+        # Open the vault
+        self.open(password)
+
+        # Change owner of all stored files
+
+        # # Get the current user's UID and GID
+        # if user is None:
+        #     user = os.getenv("USER")
+            
+        # uid = int(subprocess.check_output(['id', '-u', user]))
+        # gid = int(subprocess.check_output(['id', '-g', user]))
+
+        # # Change ownership for all files and directories in the given path
+        # for root, dirs, files in os.walk(path):
+        #     for momo in dirs + files:
+        #         momo_path = Path(root) / momo
+        #         log.info(f"Changing ownership of {momo_path} to {user} (UID: {uid}, GID: {gid})")
+        #         os.chown(momo_path, uid, gid)
+
+        # Make a temporary directory
+        with tempfile.TemporaryDirectory(dir=config.containers_path) as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Move vault content to the temporary directory  
+            try:
+                src_path = Path(self.mount_point())
+                
+                # Ensure the directories exists
+                if not src_path.exists():
+                    raise FileNotFoundError(f"The directory '{src_path}' does not exist")
+
+                shutil.copytree(src_path, temp_path)
+                log.info(f"The directory '{src_dir}' was moved to '{dst_dir}'")
+            except Exception as e:
+                print(f"An error occured while moving veracrypt content: {e}")
+
+        # Rename temporary directory
+        archive_directory = str(self.containers_path / self.name.with_suffix(''))
+        shutil.move(str(temp_path), archive_directory)
+
+        # 
+
+        # Delete veracrypt vault
+        # TODO
+
+    def mount_point(self):
+        container_path = self._to_file_path()
+
+        import re
+        pattern = re.compile(rf"{str(container_path)}\s+/dev/mapper/veracrypt\d+\s+({str(config.mount_path)}.+)$")
+        match = pattern.search(veracrypt.list_mounted_containers())
+        if match:
+            return match.group(1)
+        else:
+            return None
+
+    def is_mounted(self):
+        if self.mount_point():
+            return True
+        else:
+            return False
 
 
 class VaultsManager(object):
@@ -142,6 +201,7 @@ class VaultsManager(object):
     def __init__(self):
         pass
 
+    # TODO améliorer cette fonction pour supporter les fonctions mount_point et is_mounted
     def _refresh_list(self, mounted_only=False):
         # Get the mounted containers
         output = veracrypt.list_mounted_containers()
@@ -154,7 +214,7 @@ class VaultsManager(object):
             # convert Path to str
             file = str(file)
             # convert filename to vault for dictionary keys
-            vault = Vault('').from_container(Path(file))
+            vault = Vault('')._from_file_path(Path(file))
 
             # the veracrypt container is mounted
             if file in output:
@@ -214,7 +274,7 @@ class VaultsManager(object):
                     #     # Delete the file
                     #     file_path.unlink()
                     #     print(f"{file_path.name} successfully deleted.")
-                    v = Vault('').from_container(container)
+                    v = Vault('')._from_file_path(container)
                     log.warning(f'{v.name} is older than a year')
                     no_delete = False
         
