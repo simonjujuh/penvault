@@ -29,6 +29,9 @@ class Logger:
     def warning(self, message):
         self.logger.warning(Fore.YELLOW + "[!] " + Style.RESET_ALL + message)
 
+    def debug(self, message):
+        self.logger.debug(Fore.MAGENTA + "[DEBUG] " + Style.RESET_ALL + message)
+
 
 log = Logger("penvault")
 
@@ -39,3 +42,4 @@ if __name__ == "__main__":
     logger.success("This is a success message.")
     logger.error("This is an error message.")
     logger.warning("This is a warning message.")
+    logger.debug("This is a debug message.")
