@@ -23,7 +23,7 @@ pip3 install dist/penvault-$VERSION-py3-none-any.whl
 * On the first run, penvault will create a configuration file in `~/.penvault/config.ini`. Edit this file with the desired options
 
 ```ini
-[veracrypt]
+[containers]
 container_path = /path/to/containers/folder
 mount_path = /path/to/containers/mountpoint
 
