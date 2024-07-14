@@ -4,36 +4,19 @@ from penvault.model import Vault, VaultsManager
 
 
 # Completion methods
+# --archive
 def complete_all_vaults():
     # List of containers from filesystem
-    veracrypt_fs_containers = []
+    return VaultsManager()._refresh_list(mounted_only=False)
 
-    # Get all .vc files from veracrypt container path and add it to the list
-    for container in config.containers_path.glob("*.vc*"):
-        vault = Vault('')._from_file_path(container) # convert veracrypt to vault
-        veracrypt_fs_containers.append(vault.name)
-
-    veracrypt_fs_containers.sort()
-    return veracrypt_fs_containers
-
-
+# --close
 def complete_opened_vaults():
-    opened_vaults = []
-    # Get the mounted containers
-    mounted_containers = VaultsManager()._refresh_list(mounted_only=True)
-    
-    # Build the liste of opened vaults
-    for vc_path in mounted_containers.keys():
-        vc_path = Path(vc_path)
-        v = Vault('')._from_file_path(vc_path)
-        opened_vaults.append(v.name)
-    
-    opened_vaults.sort()
-    return opened_vaults
+    print(VaultsManager()._refresh_list(mounted_only=True))
+    return VaultsManager()._refresh_list(mounted_only=True)
 
-
+# --open
 def complete_closed_vaults():
-    all_vaults = complete_all_vaults()
-    opened_vaults = complete_opened_vaults()
+    all_vaults = VaultsManager()._refresh_list(mounted_only=False)
+    opened_vaults = VaultsManager()._refresh_list(mounted_only=True)
 
     return list(set(all_vaults) - set(opened_vaults))

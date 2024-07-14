@@ -25,7 +25,7 @@ def build_cli_args():
 
     # Open, close and archive options
     if completion:
-        parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open', choices=complete_all_vaults())
+        parser.add_argument('-o', '--open', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to open', choices=complete_closed_vaults())
         parser.add_argument('-x', '--close', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to close', choices=complete_opened_vaults())
         parser.add_argument('-z', '--archive', metavar='VAULT', type=str, nargs='+', help='Specify the name of the vault to archive', choices=complete_all_vaults())
 
