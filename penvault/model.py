@@ -3,7 +3,7 @@ import string, secrets
 import datetime
 import shutil
 import tempfile
-import py7zr
+import pyminizip
 import subprocess
 from colorama import init, Fore, Style
 from pathlib import Path
@@ -53,12 +53,12 @@ class Vault(object):
 
         # Generate random password
         length = 30
-        characters = string.ascii_letters + string.digits + # + string.punctuation
+        characters = string.ascii_letters + string.digits # + string.punctuation
         password = ''.join(secrets.choice(characters) for _ in range(length))
 
         # Do not overwrite an existing container
         if container_path.exists():
-            log.error(f"{container_path} already exists, please use another vault name")
+            log.error(f"{self.name} already exists, please use another vault name")
             sys.exit(1)
         else:
             # Create a Veracrypt container
@@ -66,7 +66,7 @@ class Vault(object):
                 veracrypt.create_container(container_path, size, password)
                 log.success(f"{self.name} created successfully with password: '{password}'")
             except Exception as e:
-                log.error(f"unable to create {container_path}: {e}")
+                log.error(f"Unable to create {self.name}: {e}")
                 sys.exit(1)
         
         # Open the freshly created container
@@ -118,7 +118,7 @@ class Vault(object):
             veracrypt.mount_container(container_path, mounted_container_path, password) # empty password means it will be prompted
             log.success(f"{self.name} mounted: {mounted_container_path}")
         except Exception as e:
-            log.error(f"unable to mount {self.name}: {e}")
+            log.error(f"Unable to open {self.name}: {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             mounted_container_path.rmdir()
@@ -128,14 +128,14 @@ class Vault(object):
 
         # Check if container is mounted or not
         if not self.is_mounted():
-            log.error(f"{self.name} not mounted, exiting")
+            log.error(f"{self.name} not opened, exiting")
             sys.exit(1)
 
         try:
             veracrypt.umount_container(container_path)
-            log.success(f"{self.name} unmounted successfully")
+            log.success(f"{self.name} closed successfully")
         except Exception as e:
-            log.error(f"unable to dismount '{self.name}': {e}")
+            log.error(f"Unable to close '{self.name}': {e}")
             sys.exit(1)
         except KeyboardInterrupt:
             pass
@@ -183,31 +183,49 @@ class Vault(object):
                 shutil.copytree(str(project_path), str(temp_path), dirs_exist_ok=True)
 
                 # Rename temporary directory to /path/to/containers/project
-                archive_path = str(config.containers_path / self.name)
-                shutil.move(temp_path, archive_path)
+                archive_dir = str(config.containers_path / self.name)
+                shutil.move(temp_path, archive_dir)
 
             except Exception as e:
-                log.error(f"An error occured while moving veracrypt content: {e}")
+                log.error(f"An error occured while copying project content: {e}")
+
 
             # Start the archive process
-            # /path/to/containers/project.7z   
-            with py7zr.SevenZipFile(archive_path + '.7z', 'w', password=password) as archive:
-                # Write content of /path/to/containers/project to project/ in the archive  
-                archive.writeall(archive_path, os.path.basename(archive_path))
-
-            # Delete veracrypt vault
+            # /path/to/containers/project.zip
+            file_paths = []
+            for root, dirs, files in os.walk(archive_dir):
+                for file in files:
+                    file_paths.append(os.path.join(root, file))
+                
+            pyminizip.compress_multiple(file_paths, [],  archive_dir + '.zip', password, 5)
+           
+            # Final steps
+            # - delete the residual archive directory after zip creation
+            shutil.rmtree(archive_dir) # Delete the archive directory create for archive
+            # - close the current vault
             self.close()
-            # shutil.rmtree(archive_path) # Delete the archive directory
-            # os.remove(str(self._to_file_path())) 
-            # Delete the container ?
-            log.success(f"Archive {archive_path + '.7z'} created ({self._to_file_path()} removed)")
-            log.debug('Please go to manually delete the containers and archive directory created.')
+            # - prompt for container deletion
+            container_path = self._to_file_path()
+            while True:
+                user_input = input(Fore.YELLOW + "[!] " 
+                                    + Style.RESET_ALL 
+                                    + f"Do you want to delete container '{container_path}'? [y/N] ").strip().lower()
+                if user_input == 'y':
+                    container_path.unlink()
+                    log.info(f"Container '{container_path}' deleted")
+                    break
+                elif user_input == 'n' or user_input == '':
+                    log.info(f"Container '{container_path}' not deleted")
+                    break
+                else:
+                    continue
+            log.success(f"Archive {archive_dir + '.zip'} created successfully")
 
     def mount_point(self):
         container_path = self._to_file_path()
 
         import re
-        pattern = re.compile(rf"{str(container_path)}\s+/dev/mapper/veracrypt\d+\s+({str(config.mount_path)}.+)$")
+        pattern = re.compile(rf"{str(container_path)}\s+/dev/mapper/veracrypt\d+\s+({str(config.mount_path)}.+)")
         match = pattern.search(veracrypt.list_mounted_containers())
         if match:
             return match.group(1)
@@ -226,57 +244,35 @@ class VaultsManager(object):
     def __init__(self):
         pass
 
-    # TODO améliorer cette fonction pour supporter les fonctions mount_point et is_mounted
     def _refresh_list(self, mounted_only=False):
-        # Get the mounted containers
-        output = veracrypt.list_mounted_containers()
-        output_lines = output.strip().split('\n')
-
-        containers = {}
-
-        # iterate over .vc files from system
-        for file in config.containers_path.glob("*.vc*"):
-            # convert Path to str
-            file = str(file)
-            # convert filename to vault for dictionary keys
-            vault = Vault('')._from_file_path(Path(file))
-
-            # the veracrypt container is mounted
-            if file in output:
-                # extract the associated line
-                for line in output_lines:
-                    if file in line:
-                        mount_line = line
-                        break
-                
-                info = mount_line.split(' ')
-                file, mapper, path = info[1], info[2], info[3]
         
-                containers[vault.name] = {'mount': path, 'mapper': mapper}
+        vaults = []
+
+        for container_path in config.containers_path.glob("*.vc*"):
+            # convert filename to vault for dictionary keys
+            vault = Vault('')._from_file_path(container_path)
+
+            if mounted_only:
+                if vault.is_mounted():
+                    vaults.append(vault.name)
             else:
-                if mounted_only:
-                    continue
-                else:
-                    containers[vault.name] = None
-            
-        return containers
+                vaults.append(vault.name)
+
+        return vaults
         
     def list(self):
-
-        containers = self._refresh_list()
-        containers = dict(sorted(containers.items()))
-
         log.info('Available vaults:')
-        i = 1
-        for key, value in containers.items():
-            # unmounted container
-            if value is None:
-                print(f'{str(i).rjust(2)}: {key.ljust(30)}')
-            else:
-                mount = value['mount']
-                print(f'{str(i).rjust(2)}: {key.ljust(30)} @ {mount} ')
 
-            i = i + 1
+        # ['project1', 'project2', ...]
+        vault_names = self._refresh_list()
+
+        for i, name in enumerate(vault_names):
+            vault = Vault(name)
+            if vault.is_mounted():
+                mount_point = vault.mount_point() 
+                print(f'{str(i).rjust(2)}: {vault.name.ljust(20)} @ {mount_point} ')
+            else:
+                print(f'{str(i).rjust(2)}: {vault.name.ljust(20)}')
 
     def prune(self):
         # Get the current date
