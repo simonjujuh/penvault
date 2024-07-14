@@ -11,10 +11,13 @@ Helps you manage your pentest vercarypt containers (vaults) easily.
 * Install the script
 
 ```bash
+# Download the builder
+pip3 install build
+
+# Clone the repository
 git clone https://github.com/simonjujuh/penvault && cd penvault
-pip3 install -r requirements.txt
-pip3 install .
-penvault
+python3 -m build
+pip3 install dist/penvault-$VERSION-py3-none-any.whl
 ```
 
 * On the first run, penvault will create a configuration file in `~/.penvault/config.ini`. Edit this file with the desired options

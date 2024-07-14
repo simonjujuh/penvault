@@ -3,7 +3,7 @@ import argparse
 from penvault.completion import *
 from penvault.config import mount_path
 
-VERSION = "1.2.0-dev" # to change
+VERSION = "1.2.0" # to change
 
 def build_cli_args():
 
