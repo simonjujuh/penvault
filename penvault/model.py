@@ -39,9 +39,11 @@ class Vault(object):
         if self.name.endswith('.vc'):
             raise ValueError("Vault object cannot end with '.vc' extension")
 
+    # project_name --> /path/to/containers/project_name.vc
     def _to_file_path(self):
         return config.containers_path / Path(self.name).with_suffix('.vc')
 
+    # /path/to/containers/project_name.vc --> project_name
     def _from_file_path(self, container_path):
         return Vault(container_path.with_suffix('').name)
 
@@ -51,7 +53,7 @@ class Vault(object):
 
         # Generate random password
         length = 30
-        characters = string.ascii_letters + string.digits + string.punctuation
+        characters = string.ascii_letters + string.digits + # + string.punctuation
         password = ''.join(secrets.choice(characters) for _ in range(length))
 
         # Do not overwrite an existing container
@@ -62,7 +64,7 @@ class Vault(object):
             # Create a Veracrypt container
             try:
                 veracrypt.create_container(container_path, size, password)
-                log.success(f"{self.name} created successfully with password {password}")
+                log.success(f"{self.name} created successfully with password: '{password}'")
             except Exception as e:
                 log.error(f"unable to create {container_path}: {e}")
                 sys.exit(1)
@@ -73,7 +75,8 @@ class Vault(object):
         # If template folder is configured, copy it
         if template_path:
             log.info(f"Template {template_path} is configured and will be copied")
-            # Copy template path
+
+            # mounted_at = /path/to/mount/point/container/
             mounted_at = config.mount_path / self.name
 
             # Ensure that the directory is mounted
@@ -92,32 +95,33 @@ class Vault(object):
             self.close()
            
     def open(self, password=''):
-        # Get the vault name
+        # Get the vault container
+        # /path/to/containers/project.vc
         container_path = self._to_file_path()
 
-        # Check if container path exists
+        # The container /path/to/containers/project.vc must exist
         if not container_path.exists():
             log.error(f"{self.name} does not exist, exiting.")
             sys.exit(1)
 
-        # Check if veracrypt mount path exists
+        # The containers mounting directory /path/to/mount/ must exist  
         if not config.mount_path.exists():
             log.error(f"{config.mount_path} mount point does not exist, exiting.")
             sys.exit(1)
         
-        # Mount container
-        vault_mount_directory = config.mount_path / self.name
+        # /path/to/mount/project
+        mounted_container_path = config.mount_path / self.name
 
         # Creating the directory if it doesn't exist
         try:
-            vault_mount_directory.mkdir(parents=False, exist_ok=True)
-            veracrypt.mount_container(container_path, vault_mount_directory, password) # empty password means it will be prompted
-            log.success(f"{self.name} mounted: {vault_mount_directory}")
+            mounted_container_path.mkdir(parents=False, exist_ok=True)
+            veracrypt.mount_container(container_path, mounted_container_path, password) # empty password means it will be prompted
+            log.success(f"{self.name} mounted: {mounted_container_path}")
         except Exception as e:
             log.error(f"unable to mount {self.name}: {e}")
             sys.exit(1)
         except KeyboardInterrupt:
-            vault_mount_directory.rmdir()
+            mounted_container_path.rmdir()
 
     def close(self):
         container_path = self._to_file_path()
@@ -142,14 +146,9 @@ class Vault(object):
 
     def archive(self, password=''):
         """
-        Convert a Veracrypt container to an tar.gz encrypted archive, mainly for storage purpose
+        Convert a Veracrypt container to a 7z encrypted archive, mainly for storage purpose
         """
         log.info(f"Starting to archive {self.name}")
-
-        # if os.geteuid() != 0:
-        #     log.error('This operation requires root privileges to preserve files and directories permissions')
-        #     log.error('Try running it with sudo')
-        #     return 
 
         # Open the vault
         if not self.is_mounted():
@@ -162,41 +161,47 @@ class Vault(object):
         gid = int(subprocess.check_output(['id', '-g', user]))
 
         # Change ownership for all files and directories in the given path
+        # This will allow us to copy / move files and directory without troubles
         run_as_sudo(['chown', '-R', f'{uid}:{gid}', self.mount_point()])
 
         # Make a temporary directory
         with tempfile.TemporaryDirectory(dir=config.containers_path) as temp_dir:
+            # The containers directory looks like that:
+            # /path/to/containers/*.vc
+            # /path/to/containers/YzuOat7/
             temp_path = Path(temp_dir)
 
             # Move vault content to the temporary directory  
             try:
-                src_path = Path(self.mount_point())
+                # /path/to/mounted/project
+                project_path = Path(self.mount_point())
                 
                 # Ensure the directories exists
-                if not src_path.exists():
-                    raise FileNotFoundError(f"The directory '{src_path}' does not exist")
+                if not project_path.exists():
+                    raise FileNotFoundError(f"The directory '{project_path}' does not exist")
 
-                shutil.copytree(str(src_path), str(temp_path), dirs_exist_ok=True)
-                # log.info(f"The directory '{src_path}' was copied to '{temp_path}'")
+                shutil.copytree(str(project_path), str(temp_path), dirs_exist_ok=True)
 
-                # Rename temporary directory
-                archive_directory = str(config.containers_path / self.name)
-                shutil.move(temp_path, archive_directory)
-                # log.info(f"The directory '{temp_path}' was renamed to '{archive_directory}'")
+                # Rename temporary directory to /path/to/containers/project
+                archive_path = str(config.containers_path / self.name)
+                shutil.move(temp_path, archive_path)
 
             except Exception as e:
-                print(f"An error occured while moving veracrypt content: {e}")
+                log.error(f"An error occured while moving veracrypt content: {e}")
 
-            # Start the archive process        
-            with py7zr.SevenZipFile(archive_directory + '.7z', 'w', password=password) as archive:
-                # Add the folder to the archive
-                archive.writeall(archive_directory, os.path.basename(archive_directory))
+            # Start the archive process
+            # /path/to/containers/project.7z   
+            with py7zr.SevenZipFile(archive_path + '.7z', 'w', password=password) as archive:
+                # Write content of /path/to/containers/project to project/ in the archive  
+                archive.writeall(archive_path, os.path.basename(archive_path))
 
             # Delete veracrypt vault
             self.close()
-            shutil.rmtree(archive_directory)
-            os.remove(str(self._to_file_path()))
-            log.success(f"Archive {archive_directory + '.7z'} created ({self._to_file_path()} removed)")
+            # shutil.rmtree(archive_path) # Delete the archive directory
+            # os.remove(str(self._to_file_path())) 
+            # Delete the container ?
+            log.success(f"Archive {archive_path + '.7z'} created ({self._to_file_path()} removed)")
+            log.debug('Please go to manually delete the containers and archive directory created.')
 
     def mount_point(self):
         container_path = self._to_file_path()
