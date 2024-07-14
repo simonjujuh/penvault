@@ -6,16 +6,13 @@ Helps you manage your pentest vercarypt containers (vaults) easily.
 
 ## Installation
 
-* Install the dependencies
-
-```bash
-sudo apt install veracrypt
-```
+* First, you need to install veracrypt (cli and gui)
 
 * Install the script
 
 ```bash
 git clone https://github.com/simonjujuh/penvault && cd penvault
+pip3 install -r requirements.txt
 pip3 install .
 penvault
 ```
@@ -45,7 +42,7 @@ eval "$(register-python-argcomplete penvault)"
 
 ## Coming soon (to-do)
 
-* [ ] Add an autoresize or archive feature for vaults
+* [x] Add an autoresize or archive feature for vaults
 * [ ] Add multiple pentest folders
 * [ ] Check and test the prune feature
-* [ ] Manage less passwords by automating the keepass /
+* [ ] Manage less passwords by using keepass
