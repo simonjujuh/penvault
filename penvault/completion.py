@@ -11,7 +11,6 @@ def complete_all_vaults():
 
 # --close
 def complete_opened_vaults():
-    print(VaultsManager()._refresh_list(mounted_only=True))
     return VaultsManager()._refresh_list(mounted_only=True)
 
 # --open
