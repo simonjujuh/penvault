@@ -1,6 +1,6 @@
 import sys
 import getpass
-from penvault.config import containers_path, mount_path, template_path
+from penvault.config import template_path
 from penvault.cli import build_cli_args
 from penvault.logger import log
 from penvault.model import VaultsManager, Vault
@@ -26,7 +26,13 @@ def main():
     elif args.open:
         # open accept mutliple vaults
         for vault_name in args.open:
-            Vault(vault_name).open()
+            try:
+                # Prompting the user for a password
+                password = getpass.getpass(f'Enter {vault_name} password: ')
+            except Exception as error:
+                print('Error while prompting password:', error)
+
+            Vault(vault_name).open(password=password)
 
     # penvault.py --archive <VAULT>
     elif args.archive:

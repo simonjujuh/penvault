@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Penvault"
+name = "penvault"
 version = "1.2.0"
 description = "A tool to manage veracrypt containers as pentest vaults"
 readme = "README.md"

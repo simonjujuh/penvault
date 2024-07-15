@@ -244,36 +244,66 @@ class VaultsManager(object):
     def __init__(self):
         pass
 
-    def _refresh_list(self, mounted_only=False):
-        
-        vaults = []
+    def get_containers_dict(self, mounted_only=False):
+        # Get the mounted containers
+        output = veracrypt.list_mounted_containers()
+        output_lines = output.strip().split('\n')
 
-        for container_path in config.containers_path.glob("*.vc*"):
+        containers = {}
+
+        # iterate over .vc files from system
+        for vc_file in config.containers_path.glob("*.vc*"):
+            # convert Path to str
+            vc_file = str(vc_file)
             # convert filename to vault for dictionary keys
-            vault = Vault('')._from_file_path(container_path)
+            vault = Vault('')._from_file_path(Path(vc_file))
 
-            if mounted_only:
-                if vault.is_mounted():
-                    vaults.append(vault.name)
+            # the veracrypt container is mounted
+            if vc_file in output:
+                # extract the associated line
+                for line in output_lines:
+                    if vc_file in line:
+                        mount_line = line
+                        break
+                
+                info = mount_line.split(' ')
+                vc_file, mapper, path = info[1], info[2], info[3]
+        
+                containers[vault.name] = {'mount': path, 'mapper': mapper}
             else:
-                vaults.append(vault.name)
+                if mounted_only:
+                    continue
+                else:
+                    containers[vault.name] = None
+            
+        return containers
+        # for container_path in config.containers_path.glob("*.vc*"):
+        #     # convert filename to vault for dictionary keys
+        #     vault = Vault('')._from_file_path(container_path)
 
-        return vaults
+        #     if mounted_only:
+        #         if vault.is_mounted():
+        #             vaults.append(vault.name)
+        #     else:
+        #         vaults.append(vault.name)
+        # return vaults
         
     def list(self):
+        containers = self.get_containers_dict()
+        containers = dict(sorted(containers.items()))
+
         log.info('Available vaults:')
-
-        # ['project1', 'project2', ...]
-        vault_names = self._refresh_list()
-
-        for i, name in enumerate(vault_names):
-            vault = Vault(name)
-            if vault.is_mounted():
-                mount_point = vault.mount_point() 
-                print(f'{str(i).rjust(2)}: {vault.name.ljust(20)} @ {mount_point} ')
+        i = 1
+        for key, value in containers.items():
+            # unmounted container
+            if value is None:
+                print(f'{str(i).rjust(2)}: {key.ljust(30)}')
             else:
-                print(f'{str(i).rjust(2)}: {vault.name.ljust(20)}')
+                mount = value['mount']
+                print(f'{str(i).rjust(2)}: {key.ljust(30)} @ {mount} ')
 
+            i = i + 1
+    
     def prune(self):
         # Get the current date
         current_date = datetime.datetime.now()
