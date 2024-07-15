@@ -3,7 +3,7 @@ import string, secrets
 import datetime
 import shutil
 import tempfile
-import pyminizip
+import pyminizip, py7zr
 import subprocess
 from colorama import init, Fore, Style
 from pathlib import Path
@@ -183,43 +183,55 @@ class Vault(object):
                 shutil.copytree(str(project_path), str(temp_path), dirs_exist_ok=True)
 
                 # Rename temporary directory to /path/to/containers/project
-                archive_dir = str(config.containers_path / self.name)
-                shutil.move(temp_path, archive_dir)
+                archive_path = config.containers_path / self.name
+                if archive_path.exists():
+                    log.error(f"A directory '{archive_path}' already exists. Please consider deleting it.")
+                    sys.exit()
+                else:
+                    shutil.move(temp_path, archive_path)
 
             except Exception as e:
                 log.error(f"An error occured while copying project content: {e}")
 
-
-            # Start the archive process
-            # /path/to/containers/project.zip
-            file_paths = []
-            for root, dirs, files in os.walk(archive_dir):
-                for file in files:
-                    file_paths.append(os.path.join(root, file))
-                
-            pyminizip.compress_multiple(file_paths, [],  archive_dir + '.zip', password, 5)
-           
-            # Final steps
-            # - delete the residual archive directory after zip creation
-            shutil.rmtree(archive_dir) # Delete the archive directory create for archive
-            # - close the current vault
-            self.close()
-            # - prompt for container deletion
-            container_path = self._to_file_path()
-            while True:
-                user_input = input(Fore.YELLOW + "[!] " 
-                                    + Style.RESET_ALL 
-                                    + f"Do you want to delete container '{container_path}'? [y/N] ").strip().lower()
-                if user_input == 'y':
-                    container_path.unlink()
-                    log.info(f"Container '{container_path}' deleted")
-                    break
-                elif user_input == 'n' or user_input == '':
-                    log.info(f"Container '{container_path}' not deleted")
-                    break
-                else:
-                    continue
-            log.success(f"Archive {archive_dir + '.zip'} created successfully")
+  
+        # Start the archive process
+        # /path/to/containers/project.7z   
+        archive_file = archive_path.with_suffix('.7z')
+        command = [
+            '7z', 'a', '-t7z',
+            archive_file,
+            archive_path,
+            f'-p{password}',
+            # '-mhe=on'  # Use -mhe=on to enable header encryption
+        ]
+        
+        # Run the command
+        try:
+            subprocess.run(command, check=True)
+            log.success(f"Directory {archive_path} has been successfully compressed and encrypted to {archive_file}")
+        except subprocess.CalledProcessError as e:
+            log.error(f"An error occurred while creating the archive: {e}")
+        
+        # Final steps
+        # - delete the residual archive directory after zip creation
+        shutil.rmtree(archive_path) # Delete the archive directory create for archive
+        # - close the current vault
+        self.close()
+        # - prompt for container deletion
+        container_path = self._to_file_path()
+        while True:
+            user_input = input(Fore.YELLOW + "[!] " 
+                                + Style.RESET_ALL 
+                                + f"Do you want to delete container '{container_path}'? [y/N] ").strip().lower()
+            if user_input == 'y':
+                container_path.unlink()
+                log.info(f"Container '{container_path}' deleted")
+                break
+            elif user_input == 'n' or user_input == '':
+                log.info(f"Container '{container_path}' not deleted")
+                break
+            else:
+                continue
 
     def mount_point(self):
         container_path = self._to_file_path()

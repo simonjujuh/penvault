@@ -12,7 +12,6 @@ authors = [
     {name = "Simon Juhel", email = "null@none.com"}
 ]
 dependencies = [
-    "pyminizip",
     "colorama",
     "argcomplete"
 ]
