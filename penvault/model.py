@@ -3,7 +3,6 @@ import string, secrets
 import datetime
 import shutil
 import tempfile
-import pyminizip, py7zr
 import subprocess
 from colorama import init, Fore, Style
 from pathlib import Path
