@@ -15,7 +15,7 @@ def create_container(container_path, project_size, password):
                 "--volume-type=normal", 
                 "--encryption=AES", 
                 "--hash=sha-512", 
-                "--filesystem=fat", 
+                "--filesystem=exfat", 
                 "--pim=0", 
                 "--keyfiles=", 
                 "--random-source=/dev/urandom"

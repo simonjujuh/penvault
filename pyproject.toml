@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "penvault"
-version = "1.2.0"
+version = "1.2.1"
 description = "A tool to manage veracrypt containers as pentest vaults"
 readme = "README.md"
 requires-python = ">=3.7"
